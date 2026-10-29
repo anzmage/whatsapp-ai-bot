@@ -1,32 +1,24 @@
 {
   "name": "whatsapp-mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Personal WhatsApp auto-reply bot: Baileys receives messages, an OpenAI-compatible LLM writes the reply.",
   "scripts": {
-    "postinstall": "node scripts/vendor-bridge.mjs",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "deploy:local": "wrangler deploy -c wrangler.local.jsonc",
-    "typecheck": "tsc --noEmit",
-    "test": "node --experimental-transform-types --no-warnings test/store.test.mts"
+    "start": "node --env-file=.env src/bot.mjs",
+    "test": "node --test \"test/*.test.mjs\""
   },
-  "dependencies": {
-    "@cloudflare/workers-oauth-provider": "0.7.0",
-    "@modelcontextprotocol/sdk": "1.29.0",
-    "@whiskeysockets/baileys": "7.0.0-rc14",
-    "qrcode-generator": "^2.0.4",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261018.1",
-    "typescript": "^7.0.2",
-    "wrangler": "^4.151.1"
-  },
-  "description": "A read-only MCP server over your own WhatsApp history, running on Cloudflare Workers.",
-  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/finereli/whatsapp-mcp.git"
+    "url": "git+https://github.com/anzmage/whatsapp-mcp.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.6"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "pino": "^10.4.0",
+    "qrcode-terminal": "^0.12.0"
   }
 }
