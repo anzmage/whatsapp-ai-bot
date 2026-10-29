@@ -1,10 +1,10 @@
-# whatsapp-mcp (WhatsApp AI auto-reply bot)
+# whatsapp-ai-bot
 
 A small personal bot: it receives WhatsApp messages through [Baileys](https://github.com/WhiskeySockets/Baileys),
 asks an OpenAI-compatible LLM for an answer, and sends it back.
 
-The repo name is a leftover: it began as a fork of finereli/whatsapp-mcp, whose code has since
-been removed (still in git history). Only `LICENSE` remains from it.
+The repo began as a fork of finereli/whatsapp-mcp, whose code has since been removed
+(still in git history). Only `LICENSE` remains from it.
 
 ## Warning
 

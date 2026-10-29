@@ -1,5 +1,5 @@
 {
-  "name": "whatsapp-mcp",
+  "name": "whatsapp-ai-bot",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anzmage/whatsapp-mcp.git"
+    "url": "git+https://github.com/anzmage/whatsapp-ai-bot.git"
   },
   "license": "MIT",
   "engines": {
