@@ -1,5 +1,11 @@
 import { config } from './config.mjs';
 
+// DeepSeek sometimes leaks its internal safety-classifier block into the reply text.
+export const cleanReply = (text) =>
+  String(text ?? '')
+    .replace(/<ds_safety>[\s\S]*?(<\/ds_safety>\s*(Safe|Unsafe)?|$)/gi, '')
+    .trim();
+
 // One call to an OpenAI-compatible /chat/completions endpoint.
 export async function complete(history) {
   if (!config.apiKey) throw new Error('LLM_API_KEY is not set');
@@ -15,7 +21,7 @@ export async function complete(history) {
   });
   if (!res.ok) throw new Error(`LLM ${res.status}: ${(await res.text()).slice(0, 200)}`);
 
-  const text = (await res.json()).choices?.[0]?.message?.content?.trim();
+  const text = cleanReply((await res.json()).choices?.[0]?.message?.content);
   if (!text) throw new Error('LLM returned an empty reply');
   return text;
 }

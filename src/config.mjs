@@ -13,7 +13,7 @@ export const digits = (s) => String(s ?? '').replace(/\D/g, '');
 export const config = {
   baseUrl: (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, ''),
   apiKey: process.env.LLM_API_KEY || '',
-  model: process.env.LLM_MODEL || 'deepseek-chat',
+  model: process.env.LLM_MODEL || 'deepseek-flash',
   systemPrompt:
     process.env.SYSTEM_PROMPT ||
     'Kamu asisten WhatsApp pribadi. Jawab singkat, ramah, dalam bahasa yang sama dengan pengirim.',
