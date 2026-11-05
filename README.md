@@ -8,6 +8,11 @@ By default it answers as **Zai**, the ZaidanLab assistant from zaidanlab.dev: sa
 Requesty), with DeepSeek as the paid last resort. Unlike the website chat it has no
 conversation-length limit and also answers general questions.
 
+**Owner first.** You keep answering from your phone. The bot only replies when a chat has waited
+`OWNER_WAIT_MINUTES` (default 30) without a reply from you; it then answers everything pending
+and keeps answering that chat until you write there again, or the chat is quiet for the same
+time. Your own replies are added to the chat history so the bot has the context.
+
 The repo began as a fork of finereli/whatsapp-mcp, whose code has since been removed
 (still in git history). Only `LICENSE` remains from it.
 
@@ -36,6 +41,7 @@ Needs Node 20.6+. The session is stored in `auth/` (git-ignored); delete it to r
 | `SYSTEM_PROMPT` | Persona and style when `KNOWLEDGE_URL` is empty. |
 | `BOT_NUMBER` | The number the bot runs on (digits, country code). Set = link with a pairing code instead of a QR. |
 | `ALLOWED_NUMBERS` | Comma-separated numbers (digits, with country code) the bot answers. Empty = nobody, `*` = anyone. |
+| `OWNER_WAIT_MINUTES` | Minutes to wait for your reply before the bot answers (0 = at once). Pending waits are lost on restart. |
 | `MAX_REPLIES_PER_HOUR` | Hourly cap across all chats (0 = no cap). |
 | `MAX_REPLIES_PER_SENDER_PER_HOUR` | Hourly cap per sender (0 = no cap). Keeps one number from using the whole budget in `*` mode. |
 | `HISTORY_TURNS` | How many past exchanges per chat are sent to the model (memory only, lost on restart). |
@@ -51,6 +57,6 @@ Needs Node 20.6+. The session is stored in `auth/` (git-ignored); delete it to r
 
 ## Tests
 
-`npm test` covers the allowlist, rate limiter, history, reply cleaning and provider fallback (not a live WhatsApp connection or real LLM calls).
+`npm test` covers the allowlist, rate limiter, history, reply cleaning, provider fallback and the owner-first handover (not a live WhatsApp connection or real LLM calls).
 
 License: MIT.

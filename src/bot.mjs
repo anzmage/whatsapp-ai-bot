@@ -1,6 +1,7 @@
 import makeWASocket, {
   DisconnectReason,
   fetchLatestBaileysVersion,
+  generateMessageIDV2,
   useMultiFileAuthState,
 } from '@whiskeysockets/baileys';
 import pino from 'pino';
@@ -16,6 +17,7 @@ import {
   senderNumbers,
   textOf,
 } from './guard.mjs';
+import { makeChatIds, makeHandover } from './handover.mjs';
 
 const AUTH_DIR = 'auth';
 const log = pino({ level: process.env.LOG_LEVEL || 'info' });
@@ -25,26 +27,58 @@ const canReplyTo = makePerSenderLimiter(config.maxRepliesPerSenderPerHour);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const jitter = () => config.delayMinMs + Math.random() * Math.max(0, config.delayMaxMs - config.delayMinMs);
 
-// One reply at a time per chat, so two quick messages don't interleave in the history.
+// One reply at a time per chat; messages that arrive meanwhile get one follow-up reply.
 const busy = new Set();
+const again = new Set();
+const chatId = makeChatIds();
+const handover = makeHandover({ waitMs: config.ownerWaitMinutes * 60_000 });
+// Ids of messages the bot sent, so its own echoes are not mistaken for the owner typing.
+const botSent = new Set();
+const remember = (id) => {
+  botSent.add(id);
+  if (botSent.size > 500) botSent.delete(botSent.values().next().value);
+};
 
 // Reconnects reuse the module, so a pairing code is requested once per process, not once per socket.
 let pairingRequested = false;
 
-async function handle(sock, msg) {
+async function handle(sock, msg, type) {
   const { key } = msg;
-  if (!isDirectIncoming(key)) return;
-
+  if (!key.remoteJid || /@(g\.us|broadcast|newsletter)$/.test(key.remoteJid)) return;
   const text = textOf(msg.message).trim();
-  if (!text) return;
 
+  if (key.fromMe) {
+    if (botSent.has(key.id)) return;
+    // Skip old messages replayed on reconnect; a recent one means the owner is answering.
+    const ageMs = Date.now() - Number(msg.messageTimestamp || 0) * 1000;
+    if (ageMs > Math.max(config.ownerWaitMinutes * 60_000, 120_000)) return;
+    const chat = chatId(key);
+    if (handover.pending(chat)) log.info({ chat }, 'owner replied; bot stands down');
+    handover.ownerReplied(chat);
+    if (text) history.add(chat, 'assistant', text);
+    return;
+  }
+
+  // Customer messages: live ones only, never history replayed on reconnect.
+  if (type !== 'notify' || !isDirectIncoming(key) || !text) return;
   if (!isAllowed(key, config.allowed, config.allowAll)) {
     log.info({ from: senderNumbers(key) }, 'ignored: sender not in ALLOWED_NUMBERS');
     return;
   }
-  if (busy.has(key.remoteJid)) return;
-  if (config.maxRepliesPerSenderPerHour > 0 && !canReplyTo(key.remoteJid)) {
-    log.warn({ from: key.remoteJid }, 'per-sender hourly limit reached; staying silent');
+
+  const chat = chatId(key);
+  history.add(chat, 'user', text);
+  const when = handover.incoming(chat, () => respond(sock, chat));
+  if (when !== 'now') log.info({ chat, minutes: config.ownerWaitMinutes, when }, 'waiting for the owner to reply');
+}
+
+async function respond(sock, chat) {
+  if (busy.has(chat)) {
+    again.add(chat);
+    return;
+  }
+  if (config.maxRepliesPerSenderPerHour > 0 && !canReplyTo(chat)) {
+    log.warn({ chat }, 'per-sender hourly limit reached; staying silent');
     return;
   }
   if (!canReply()) {
@@ -52,20 +86,30 @@ async function handle(sock, msg) {
     return;
   }
 
-  busy.add(key.remoteJid);
+  busy.add(chat);
+  const startedAt = Date.now();
   try {
-    history.add(key.remoteJid, 'user', text);
-    const { text: reply, provider } = await complete(history.get(key.remoteJid), { log });
-    await sock.sendPresenceUpdate('composing', key.remoteJid);
+    const { text: reply, provider } = await complete(history.get(chat), { log });
+    await sock.sendPresenceUpdate('composing', chat);
     await sleep(jitter());
-    await sock.sendMessage(key.remoteJid, { text: reply });
-    await sock.sendPresenceUpdate('paused', key.remoteJid);
+    // The owner may have jumped in while the model was thinking.
+    if (handover.ownerSince(chat, startedAt)) {
+      log.info({ chat }, 'owner replied while generating; reply dropped');
+      return;
+    }
+    // Register the id before sending: our own echo can arrive before sendMessage resolves.
+    const messageId = generateMessageIDV2(sock.user?.id);
+    remember(messageId);
+    await sock.sendMessage(chat, { text: reply }, { messageId });
+    await sock.sendPresenceUpdate('paused', chat);
+    history.add(chat, 'assistant', reply);
+    handover.botReplied(chat);
     log.info({ provider }, 'replied');
-    history.add(key.remoteJid, 'assistant', reply);
   } catch (err) {
     log.error({ err: err.message }, 'reply failed');
   } finally {
-    busy.delete(key.remoteJid);
+    busy.delete(chat);
+    if (again.delete(chat)) respond(sock, chat);
   }
 }
 
@@ -101,9 +145,9 @@ async function start() {
     }
   });
 
+  // 'notify' = live messages; 'append' also carries the owner's messages sent while we reconnected.
   sock.ev.on('messages.upsert', ({ messages, type }) => {
-    if (type !== 'notify') return;
-    for (const msg of messages) handle(sock, msg).catch((err) => log.error({ err: err.message }, 'handler crashed'));
+    for (const msg of messages) handle(sock, msg, type).catch((err) => log.error({ err: err.message }, 'handler crashed'));
   });
 }
 

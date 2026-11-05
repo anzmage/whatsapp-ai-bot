@@ -22,6 +22,8 @@ export const config = {
   botNumber: digits(process.env.BOT_NUMBER),
   allowAll: (process.env.ALLOWED_NUMBERS || '').trim() === '*',
   allowed: new Set((process.env.ALLOWED_NUMBERS || '').split(',').map(digits).filter(Boolean)),
+  // Minutes the bot waits for the owner to answer from the phone before replying itself (0 = reply at once).
+  ownerWaitMinutes: int('OWNER_WAIT_MINUTES', 30),
   maxRepliesPerHour: int('MAX_REPLIES_PER_HOUR', 30),
   maxRepliesPerSenderPerHour: int('MAX_REPLIES_PER_SENDER_PER_HOUR', 10),
   historyTurns: int('HISTORY_TURNS', 10),

@@ -19,6 +19,7 @@ test('cleanReply drops website markers and converts markdown for WhatsApp', () =
 test('complete falls through failing providers and ends with the last one', async () => {
   const calls = [];
   const fetcher = async (url) => {
+    if (!url.includes('/chat/completions')) return new Response('knowledge'); // llms.txt when KNOWLEDGE_URL is set
     calls.push(url);
     if (url.includes('a.test')) return new Response('down', { status: 503 });
     if (url.includes('b.test')) return Response.json({ choices: [{ message: { content: '' } }] });
