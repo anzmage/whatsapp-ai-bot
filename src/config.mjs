@@ -17,6 +17,8 @@ export const config = {
   systemPrompt:
     process.env.SYSTEM_PROMPT ||
     'Kamu asisten WhatsApp pribadi. Jawab singkat, ramah, dalam bahasa yang sama dengan pengirim.',
+  // Set = answer as Zai, ZaidanLab's assistant, with this llms.txt as knowledge (SYSTEM_PROMPT is then unused).
+  knowledgeUrl: (process.env.KNOWLEDGE_URL || '').trim(),
   botNumber: digits(process.env.BOT_NUMBER),
   allowAll: (process.env.ALLOWED_NUMBERS || '').trim() === '*',
   allowed: new Set((process.env.ALLOWED_NUMBERS || '').split(',').map(digits).filter(Boolean)),

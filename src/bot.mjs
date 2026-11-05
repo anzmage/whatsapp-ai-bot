@@ -55,11 +55,12 @@ async function handle(sock, msg) {
   busy.add(key.remoteJid);
   try {
     history.add(key.remoteJid, 'user', text);
-    const reply = await complete(history.get(key.remoteJid));
+    const { text: reply, provider } = await complete(history.get(key.remoteJid), { log });
     await sock.sendPresenceUpdate('composing', key.remoteJid);
     await sleep(jitter());
     await sock.sendMessage(key.remoteJid, { text: reply });
     await sock.sendPresenceUpdate('paused', key.remoteJid);
+    log.info({ provider }, 'replied');
     history.add(key.remoteJid, 'assistant', reply);
   } catch (err) {
     log.error({ err: err.message }, 'reply failed');
