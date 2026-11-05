@@ -1,3 +1,8 @@
+// Local runs read .env; on a host (Railway, Docker) the variables come from the environment instead.
+try {
+  process.loadEnvFile();
+} catch {}
+
 const int = (name, fallback) => {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n >= 0 && process.env[name] !== '' && process.env[name] !== undefined ? n : fallback;

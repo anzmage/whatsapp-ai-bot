@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Personal WhatsApp auto-reply bot: Baileys receives messages, an OpenAI-compatible LLM writes the reply.",
   "scripts": {
-    "start": "node --env-file=.env src/bot.mjs",
+    "start": "node src/bot.mjs",
     "test": "node --test \"test/*.test.mjs\""
   },
   "repository": {
@@ -14,7 +14,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=20.6"
+    "node": ">=20.12"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
